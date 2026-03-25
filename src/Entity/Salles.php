@@ -6,6 +6,7 @@ use App\Repository\SallesRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
+
 #[ORM\Entity(repositoryClass: SallesRepository::class)]
 #[ORM\Table(name: 'salles')]
 #[ORM\HasLifecycleCallbacks]

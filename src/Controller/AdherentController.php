@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Adherent;
+use App\Entity\Reservations;
 use App\Repository\ReservationsRepository;
 use App\Repository\AdherentRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -13,7 +14,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-#[Route('/adherents', name: 'api_adherents_')]
+#[Route('api/adherents', name: 'api_adherents_')]
 class AdherentController extends AbstractController
 {
     public function __construct(
@@ -32,6 +33,39 @@ class AdherentController extends AbstractController
         return $this->json($user->toArray(), Response::HTTP_OK);
     }
 
+    // NOTE: Modifier MON profil (utilise le token, pas d'ID dans l'URL)
+    #[Route('/me', name: 'update_me', methods: ['PUT'])]
+    #[IsGranted('ROLE_USER')]
+    public function updateMe(Request $request): JsonResponse
+    {
+        // $this->getUser() renvoie l'utilisateur connecté grâce au token
+        $adherent = $this->getUser();
+
+        $data = json_decode($request->getContent(), true);
+
+        if (null === $data) {
+            return $this->json(['message' => 'JSON invalide'], Response::HTTP_BAD_REQUEST);
+        }
+
+        // On met à jour les infos (pas besoin de vérifier l'ID, c'est forcément lui)
+        if (isset($data['nom'])) {
+            $adherent->setNom($data['nom']);
+        }
+        if (isset($data['prenom'])) {
+            $adherent->setPrenom($data['prenom']);
+        }
+        if (isset($data['ligue'])) {
+            $adherent->setLigue($data['ligue']);
+        }
+
+        $this->entityManager->flush();
+
+        return $this->json([
+            'message' => 'Profil mis à jour',
+            'adherent' => $adherent->toArray()
+        ], Response::HTTP_OK);
+    }
+
     // Create 
     #[Route('', name: 'create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
@@ -46,7 +80,7 @@ class AdherentController extends AbstractController
         $adherent = new Adherent();
         $adherent->setNom($data['nom']);
         $adherent->setPrenom($data['prenom']);
-        $adherent->setLigue($data['lique']);
+        $adherent->setLigue($data['ligue']);
         $adherent->setRoles($data['roles']);
 
         $this->entityManager->persist($adherent);
@@ -173,6 +207,21 @@ class AdherentController extends AbstractController
         ], Response::HTTP_OK);
     }
 
+    // NOTE: Voir MES réservations (plus besoin de passer l'ID)
+    // IMPORTANT : Je place cette route AVANT la route /{id}/reservations pour éviter les conflits
+    #[Route('/me/reservations', name: 'my_reservations', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
+    public function myReservations(): JsonResponse
+    {
+        $adherent = $this->getUser();
+        $reservations = $this->reservationsRepository->findBy(['adherent' => $adherent]);
+
+        return $this->json(
+            array_map(fn (Reservations $r) => $r->toArray(), $reservations),
+            Response::HTTP_OK
+        );
+    }
+
     // Read reservations of an adherent
     #[Route('/{id}/reservations', name: 'reservations', methods: ['GET'])]
     #[IsGranted('ROLE_USER')]
@@ -189,7 +238,7 @@ class AdherentController extends AbstractController
         $reservations = $this->reservationsRepository->findBy(['adherent' => $adherent]);
 
         return $this->json(
-            array_map(fn (Reservation $r) => $r->toArray(), $reservations),
+            array_map(fn (Reservations $r) => $r->toArray(), $reservations),
             Response::HTTP_OK
         );
     }

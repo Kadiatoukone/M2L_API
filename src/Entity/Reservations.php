@@ -20,7 +20,7 @@ class Reservations
     private ?\DateTimeInterface $dateDebut = null;
 
     #[ORM\ManyToOne(targetEntity: Adherent::class)]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(nullable: false, referencedColumnName: "id_adherent")]
     private ?Adherent $adherent = null;
 
     #[ORM\Column(name: "date_fin", type: Types::DATE_MUTABLE)]

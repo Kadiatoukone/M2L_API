@@ -15,7 +15,7 @@ class Adherent implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: Types::INTEGER)]
-    private ?int $id_Adhérent = null;
+    private ?int $id_adherent = null;
 
     #[ORM\Column(type: Types::STRING, length: 255)]
     private ?string $nom = null;
@@ -43,7 +43,7 @@ class Adherent implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getId(): ?int
     {
-        return $this->id_Adhérent;
+        return $this->id_adherent;
     }
 
     public function getNom(): ?string
@@ -157,7 +157,7 @@ public function eraseCredentials(): void
     public function toArray(): array
     {
         return [
-            'id' => $this->id_Adhérent,
+            'id' => $this->id_adherent,
             'nom' => $this->nom,
             'prenom' => $this->prenom,
             'email' => $this->email,
