@@ -84,6 +84,57 @@ class GestionnairesController extends AbstractController
         return $this->json($nouveauGestionnaire, 201, [], ['groups' => 'admin:read']);
     }
 
+    //MODIFICATION DES GESTIONNAIRES
+    #[Route('/gestionnaires/{id}', name: 'update_gestionnaire', methods: ['PUT'])]
+    public function updateGestionnaire(
+        int $id,
+        Request $request,
+        GestionnairesRepository $gestionnairesRepository,
+        EntityManagerInterface $entityManager,
+        UserPasswordHasherInterface $passwordHasher,
+        ValidatorInterface $validator
+    ): JsonResponse {
+        $gestionnaire = $gestionnairesRepository->find($id);
+
+        if (!$gestionnaire) {
+            return $this->json(['message' => 'Gestionnaire introuvable'], 404);
+        }
+
+        $data = json_decode($request->getContent(), true);
+
+        if (isset($data['nom'])) {
+            $gestionnaire->setNom($data['nom']);
+        }
+        if (isset($data['prenom'])) {
+            $gestionnaire->setPrenom($data['prenom']);
+        }
+        if (isset($data['email'])) {
+            $gestionnaire->setEmail($data['email']);
+        }
+        if (isset($data['identifiant'])) {
+            $gestionnaire->setIdentifiant($data['identifiant']);
+        }
+        if (isset($data['roles'])) {
+            $gestionnaire->setRoles($data['roles']);
+        }
+        if (isset($data['password'])) {
+            $gestionnaire->setPassword($data['password']);
+            $erreurs = $validator->validate($gestionnaire);
+            if (count($erreurs) > 0) {
+                $messagesErreurs = [];
+                foreach ($erreurs as $erreur) {
+                    $messagesErreurs[] = $erreur->getMessage();
+                }
+                return $this->json(['erreurs' => $messagesErreurs], 400);
+            }
+            $gestionnaire->setPassword($passwordHasher->hashPassword($gestionnaire, $data['password']));
+        }
+
+        $entityManager->flush();
+
+        return $this->json($gestionnaire, 200, [], ['groups' => 'admin:read']);
+    }
+
     //SUPPRESSION DES GESTIONNAIRES
     #[Route('/gestionnaires/{id}', name: 'delete_gestionnaire', methods: ['DELETE'])]
     public function deleteGestionnaire(

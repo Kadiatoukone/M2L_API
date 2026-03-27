@@ -3,7 +3,6 @@ security:
         Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
 
     providers:
-        # On dit à Symfony où chercher les utilisateurs pour la connexion
         app_user_provider:
             entity:
                 class: App\Entity\Gestionnaires
@@ -14,28 +13,40 @@ security:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
 
-        # La route pour se connecter et récupérer le Token
         login:
             pattern: ^/api/login
             stateless: true
             json_login:
                 check_path: /api/login_check
-                username_path: identifiant # Doit correspondre au 'property' du provider juste au-dessus
+                username_path: identifiant
                 password_path: password
                 success_handler: lexik_jwt_authentication.handler.authentication_success
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
-                
+
         api:
-            pattern:   ^/api
+            pattern: ^/api
             stateless: true
-            jwt: ~ # Ici on active la vérification du token JWT
+            jwt: ~
 
     access_control:
-        # On autorise tout le monde à tenter de se connecter
+        # Auth publique
         - { path: ^/api/login, roles: PUBLIC_ACCESS }
-        
-        # Exemple : Seul le SUPER_ADMIN peut accéder aux routes /api/gestionnaires
+
+        # Gestion des types de salles (lecture pour tous les gestionnaires)
+        - { path: ^/api/types-salles, roles: IS_AUTHENTICATED_FULLY }
+
+        # Gestion des salles (lecture + création + modif pour gestionnaires)
+        - { path: ^/api/salles, roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/api/mes-salles, roles: IS_AUTHENTICATED_FULLY }
+
+        # Gestion des gestionnaires (super admin uniquement)
         - { path: ^/api/gestionnaires, roles: ROLE_SUPER_ADMIN }
-        
-        # Pour toutes les autres routes /api, il faut avoir un token valide
-        - { path: ^/api,       roles: IS_AUTHENTICATED_FULLY }
+
+        # Toutes les autres routes API nécessitent un token valide
+        - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
+
+        - { path: ^/api/upload, roles: IS_AUTHENTICATED_FULLY }
+
+    # Hiérarchie des rôles : SUPER_ADMIN hérite de GESTIONNAIRE
+    role_hierarchy:
+        ROLE_SUPER_ADMIN: [ROLE_GESTIONNAIRE]

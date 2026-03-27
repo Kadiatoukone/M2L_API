@@ -17,7 +17,7 @@ class Gestionnaires implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['admin:read'])]
+    #[Groups(['admin:read', 'salle:read'])]
     private ?int $id_gestionnaires = null;
 
     #[ORM\Column(length: 255)]
@@ -29,7 +29,7 @@ class Gestionnaires implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $prenom = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['admin:read'])]
+    #[Groups(['admin:read', 'salle:read'])]
     private ?string $identifiant = null;
 
     #[ORM\Column(length: 255)]
