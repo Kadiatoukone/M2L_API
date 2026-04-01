@@ -26,7 +26,7 @@ class ReservationsController extends AbstractController
     public function list(Request $request): JsonResponse
     {
         $user = $this->getUser();
-        $date = $request->query->get('date'); // filtre optionnel ?date=YYYY-MM-DD
+        $date = $request->query->get('date'); 
 
         $qb = $this->reservationsRepository->createQueryBuilder('r');
 
@@ -64,9 +64,7 @@ class ReservationsController extends AbstractController
         ));
     }
 
-    /**
-     * 🔐 Créer une réservation
-     */
+    //CREER UNE RESERVATION
     #[Route('', name: 'create', methods: ['POST'])]
     #[IsGranted('ROLE_USER')]
     public function create(Request $request): JsonResponse
@@ -101,9 +99,7 @@ class ReservationsController extends AbstractController
         ], Response::HTTP_CREATED);
     }
 
-    /**
-     * Valider ou refuser une réservation (gestionnaire uniquement)
-     */
+    //VALISER OU REFUSER UNE RESA (gestionnaires uniquement)
     #[Route('/{id}/statut', name: 'update_statut', methods: ['PATCH'])]
     #[IsGranted('ROLE_GESTIONNAIRE')]
     public function updateStatut(int $id, Request $request): JsonResponse
@@ -130,9 +126,7 @@ class ReservationsController extends AbstractController
         ]);
     }
 
-    /**
-     * Supprimer une réservation (gestionnaire ou propriétaire)
-     */
+    //SUPPRIMER UNE RESERVATION (adhérent)
     #[Route('/{id}', name: 'delete', methods: ['DELETE'])]
     #[IsGranted('ROLE_USER')]
     public function delete(int $id): JsonResponse

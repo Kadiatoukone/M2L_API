@@ -35,7 +35,7 @@ security:
         # Gestion des types de salles (lecture pour tous les gestionnaires)
         - { path: ^/api/types-salles, roles: IS_AUTHENTICATED_FULLY }
 
-        # Gestion des salles (lecture + création + modif pour gestionnaires)
+        # Gestion des salles (lecture + création + modification pour gestionnaires)
         - { path: ^/api/salles, roles: IS_AUTHENTICATED_FULLY }
         - { path: ^/api/mes-salles, roles: IS_AUTHENTICATED_FULLY }
 

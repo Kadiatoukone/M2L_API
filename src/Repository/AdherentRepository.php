@@ -15,7 +15,7 @@ class AdherentRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Adherent::class);
-        $this->connection = $registry->getConnection(); // Ajout
+        $this->connection = $registry->getConnection(); 
     }
 
     public function findByName(string $name): array

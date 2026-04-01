@@ -17,7 +17,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[Route('/api', name: 'api_')]
 class SallesController extends AbstractController
 {
-    // GET toutes les salles (filtre optionnel ?categorie=sport|evenement)
+    // GET toutes les salles
     #[Route('/salles', name: 'salles_list', methods: ['GET'])]
     public function getSalles(Request $request, SallesRepository $sallesRepository): JsonResponse
     {

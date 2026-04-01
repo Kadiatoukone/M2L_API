@@ -19,10 +19,10 @@ class TypeSalleController extends AbstractController
     {
         $grouped = $repo->findAllGroupedByCategorie();
 
-        // On sérialise manuellement pour renvoyer un format propre au front
+        // On sérialise manuellement 
         $data = [
-            'sport'     => array_map(fn($t) => ['id' => $t->getId(), 'libelle' => $t->getLibelle()], $grouped['sport']),
-            'evenement' => array_map(fn($t) => ['id' => $t->getId(), 'libelle' => $t->getLibelle()], $grouped['evenement']),
+            'sport'     => array_map(fn($t) => ['id' => $t->getId(), 'libelle' => $t->getLibelle(), 'categorie' => $t->getCategorie()], $grouped['sport']),
+            'evenement' => array_map(fn($t) => ['id' => $t->getId(), 'libelle' => $t->getLibelle(), 'categorie' => $t->getCategorie()], $grouped['evenement']),
         ];
 
         return $this->json($data, 200);

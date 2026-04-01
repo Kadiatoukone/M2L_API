@@ -18,7 +18,7 @@ class GestionnaireFixtures extends Fixture
 
     public function load(ObjectManager $manager): void
     {
-        // 1. On crée le compte Super Admin
+        // On crée le compte Super Admin
         $superAdmin = new Gestionnaires();
         
         $superAdmin->setIdentifiant('CGH'); 
@@ -34,10 +34,10 @@ class GestionnaireFixtures extends Fixture
         $motDePasseCrypte = $this->hasher->hashPassword($superAdmin, 'KingInTheNorth1');
         $superAdmin->setPassword($motDePasseCrypte);
 
-        // 3. On prépare l'enregistrement
+        // On prépare l'enregistrement
         $manager->persist($superAdmin);
 
-        // 4. On envoie dans la base de données MySQL
+        // On envoie dans la base de données MySQL
         $manager->flush();
     }
 }

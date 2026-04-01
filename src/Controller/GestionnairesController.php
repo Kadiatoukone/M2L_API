@@ -43,7 +43,7 @@ class GestionnairesController extends AbstractController
             return $this->json(['message' => 'Identifiant et mot de passe obligatoires'], 400);
         }
 
-        // 2. On crée le nouvel utilisateur
+        // On crée le nouvel utilisateur
         $nouveauGestionnaire = new Gestionnaires();
         $nouveauGestionnaire->setIdentifiant($data['identifiant']);
         $nouveauGestionnaire->setRoles(['ROLE_GESTIONNAIRE']); // Rôle par défaut
@@ -57,7 +57,7 @@ class GestionnairesController extends AbstractController
         // On met temporairement le mot de passe EN CLAIR pour le Validator
         $nouveauGestionnaire->setPassword($data['password']);
 
-        // 3. On vérifie les règles de la CNIL
+        // On vérifie les règles de la CNIL
         $erreurs = $validator->validate($nouveauGestionnaire);
         
         if (count($erreurs) > 0) {
@@ -69,18 +69,18 @@ class GestionnairesController extends AbstractController
             return $this->json(['erreurs' => $messagesErreurs], 400);
         }
 
-        // 4. Si c'est validé, on HACHE le mot de passe pour la sécurité
+        // Si c'est validé, on HACHE le mot de passe pour la sécurité
         $motDePasseHache = $passwordHasher->hashPassword(
             $nouveauGestionnaire,
             $data['password']
         );
         $nouveauGestionnaire->setPassword($motDePasseHache);
 
-        // 5. On sauvegarde dans la base de données
+        // On sauvegarde dans la base de données
         $entityManager->persist($nouveauGestionnaire);
         $entityManager->flush();
 
-        // 6. On renvoie les infos (le code 201 signifie "Created")
+        // On renvoie les infos 
         return $this->json($nouveauGestionnaire, 201, [], ['groups' => 'admin:read']);
     }
 
@@ -142,10 +142,10 @@ class GestionnairesController extends AbstractController
         GestionnairesRepository $gestionnairesRepository, 
         EntityManagerInterface $entityManager
     ): JsonResponse {
-        // 1. On cherche le gestionnaire dans la base de données grâce à son ID
+        // On cherche le gestionnaire dans la base de données grâce à son ID
         $gestionnaire = $gestionnairesRepository->find($id);
 
-        // 2. S'il n'existe pas, on renvoie une erreur 404
+        // S'il n'existe pas, on renvoie une erreur 404
         if (!$gestionnaire) {
             return $this->json(['message' => 'Gestionnaire introuvable'], 404);
         }
@@ -155,11 +155,11 @@ class GestionnairesController extends AbstractController
             return $this->json(['message' => 'Action refusée : vous ne pouvez pas supprimer votre propre compte.'], 403);
         }
 
-        // 4. On demande à Doctrine de le supprimer
+        // On demande à Doctrine de le supprimer
         $entityManager->remove($gestionnaire);
         $entityManager->flush();
 
-        // 5. On confirme que tout s'est bien passé
+        // On confirme que tout va bien
         return $this->json(['message' => 'Le gestionnaire a été supprimé avec succès.'], 200);
     }
 
@@ -167,10 +167,10 @@ class GestionnairesController extends AbstractController
     #[Route('/gestionnaires', name: 'list_gestionnaires', methods: ['GET'])]
     public function getGestionnaires(GestionnairesRepository $gestionnairesRepository): JsonResponse
     {
-        // 1. On récupère TOUS les gestionnaires de la table
+        // On récupère TOUS les gestionnaires de la table
         $gestionnaires = $gestionnairesRepository->findAll();
 
-        // 2. On les renvoie en JSON (code 200 = OK) + le groupe 'admin:read' garantit que les mots de passe ne seront pas envoyés 
+        // On les renvoie en JSON  + le groupe 'admin:read' garantit que les mots de passe ne seront pas envoyés 
         return $this->json($gestionnaires, 200, [], ['groups' => 'admin:read']);
     }
 

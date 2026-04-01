@@ -34,7 +34,7 @@ class TypeSalleRepository extends ServiceEntityRepository
         return $grouped;
     }
 
-    // Cherche un type par libellé exact (insensible à la casse) pour éviter les doublons
+    // Cherche un type par libellé exact pour éviter les doublons
     public function findByLibelle(string $libelle): ?TypeSalle
     {
         return $this->createQueryBuilder('t')
