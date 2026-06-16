@@ -11,6 +11,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -20,25 +21,25 @@ class AdherentController extends AbstractController
     public function __construct(
         private AdherentRepository $adherentRepository,
         private EntityManagerInterface $entityManager,
-        private ReservationsRepository $reservationsRepository
+        private ReservationsRepository $reservationsRepository,
+        private UserPasswordHasherInterface $passwordHasher
     ) {
     }
+
+    // ── Profil connecté ────────────────────────────────────────────────────────
 
     #[Route('/me', name: 'me', methods: ['GET'])]
     #[IsGranted('ROLE_USER')]
     public function me(): JsonResponse
     {
-        $user = $this->getUser();
-
-        return $this->json($user->toArray(), Response::HTTP_OK);
+        return $this->json($this->getUser()->toArray(), Response::HTTP_OK);
     }
 
-    // NOTE: Modifier MON profil (utilise le token, pas d'ID dans l'URL)
-    #[Route('/me', name: 'update_me', methods: ['PUT'])]
+    #[Route('/me', name: 'update_me', methods: ['PUT', 'PATCH'])]
     #[IsGranted('ROLE_USER')]
     public function updateMe(Request $request): JsonResponse
     {
-        // $this->getUser() renvoie l'utilisateur connecté grâce au token
+        /** @var Adherent $adherent */
         $adherent = $this->getUser();
 
         $data = json_decode($request->getContent(), true);
@@ -47,52 +48,72 @@ class AdherentController extends AbstractController
             return $this->json(['message' => 'JSON invalide'], Response::HTTP_BAD_REQUEST);
         }
 
-        // On met à jour les infos (pas besoin de vérifier l'ID, c'est forcément lui)
-        if (isset($data['nom'])) {
-            $adherent->setNom($data['nom']);
-        }
-        if (isset($data['prenom'])) {
-            $adherent->setPrenom($data['prenom']);
-        }
-        if (isset($data['ligue'])) {
-            $adherent->setLigue($data['ligue']);
-        }
+        if (isset($data['nom']))    { $adherent->setNom($data['nom']); }
+        if (isset($data['prenom'])) { $adherent->setPrenom($data['prenom']); }
+        if (isset($data['ligue']))  { $adherent->setLigue($data['ligue']); }
+        if (isset($data['poste']))  { $adherent->setPoste($data['poste']); }
 
         $this->entityManager->flush();
 
         return $this->json([
-            'message' => 'Profil mis à jour',
-            'adherent' => $adherent->toArray()
+            'message'  => 'Profil mis à jour',
+            'adherent' => $adherent->toArray(),
         ], Response::HTTP_OK);
     }
 
-    // Create 
-    #[Route('', name: 'create', methods: ['POST'])]
-    public function create(Request $request): JsonResponse
+    #[Route('/me/password', name: 'change_password', methods: ['PATCH'])]
+    #[IsGranted('ROLE_USER')]
+    public function changePassword(Request $request): JsonResponse
     {
+        /** @var Adherent $adherent */
+        $adherent = $this->getUser();
+
         $data = json_decode($request->getContent(), true);
 
-        if (null === $data) {
+        if (empty($data['current_password']) || empty($data['new_password'])) {
             return $this->json([
-                'message' => 'Le corps de la requête est invalide (JSON malformé).'
+                'message' => 'Champs obligatoires manquants (current_password, new_password)',
             ], Response::HTTP_BAD_REQUEST);
         }
-        $adherent = new Adherent();
-        $adherent->setNom($data['nom']);
-        $adherent->setPrenom($data['prenom']);
-        $adherent->setLigue($data['ligue']);
-        $adherent->setRoles($data['roles']);
 
-        $this->entityManager->persist($adherent);
+        if (!$this->passwordHasher->isPasswordValid($adherent, $data['current_password'])) {
+            return $this->json([
+                'message' => 'Mot de passe actuel incorrect',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        if (strlen($data['new_password']) < 6) {
+            return $this->json([
+                'message' => 'Le nouveau mot de passe doit contenir au moins 6 caractères',
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $adherent->setMotDePasse(
+            $this->passwordHasher->hashPassword($adherent, $data['new_password'])
+        );
         $this->entityManager->flush();
 
-        return $this->json([
-            'message' => 'Adhérent créé',
-            'adherent' => $adherent->toArray()
-        ], Response::HTTP_CREATED);
+        return $this->json(['message' => 'Mot de passe mis à jour'], Response::HTTP_OK);
     }
 
-    // read all 
+    // ── Réservations du connecté ───────────────────────────────────────────────
+    // NOTE : placée AVANT /{id}/reservations pour éviter les conflits de route
+
+    #[Route('/me/reservations', name: 'my_reservations', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
+    public function myReservations(): JsonResponse
+    {
+        $adherent     = $this->getUser();
+        $reservations = $this->reservationsRepository->findBy(['adherent' => $adherent]);
+
+        return $this->json(
+            array_map(fn (Reservations $r) => $r->toArray(), $reservations),
+            Response::HTTP_OK
+        );
+    }
+
+    // ── CRUD ───────────────────────────────────────────────────────────────────
+
     #[Route('', name: 'list', methods: ['GET'])]
     #[IsGranted('ROLE_ADMIN')]
     public function list(): JsonResponse
@@ -105,7 +126,6 @@ class AdherentController extends AbstractController
         );
     }
 
-    // read one
     #[Route('/{id}', name: 'get', methods: ['GET'])]
     #[IsGranted('ROLE_USER')]
     public function get(int $id): JsonResponse
@@ -113,70 +133,50 @@ class AdherentController extends AbstractController
         $adherent = $this->adherentRepository->find($id);
 
         if (!$adherent) {
-            return $this->json([
-                'message' => 'Adhérent introuvable'
-            ], Response::HTTP_NOT_FOUND);
+            return $this->json(['message' => 'Adhérent introuvable'], Response::HTTP_NOT_FOUND);
         }
 
         return $this->json($adherent->toArray(), Response::HTTP_OK);
     }
 
-    #[Route('/{id}', name: 'update', methods: ['PUT'])]
+    #[Route('/{id}', name: 'update', methods: ['PUT', 'PATCH'])]
     #[IsGranted('ROLE_USER')]
-    public function update(
-        int $id,
-        Request $request
-    ): JsonResponse {
+    public function update(int $id, Request $request): JsonResponse
+    {
         $adherent = $this->adherentRepository->find($id);
 
         if (!$adherent) {
-            return $this->json([
-                'message' => 'Adhérent introuvable'
-            ], Response::HTTP_NOT_FOUND);
+            return $this->json(['message' => 'Adhérent introuvable'], Response::HTTP_NOT_FOUND);
         }
 
-
+        /** @var Adherent $currentUser */
         $currentUser = $this->getUser();
 
-        // Sécurité : seul l'admin ou l'utilisateur lui-même
         if (
             !$this->isGranted('ROLE_ADMIN') &&
             $currentUser->getId() !== $adherent->getId()
         ) {
-            return $this->json([
-                'message' => 'Accès refusé'
-            ], Response::HTTP_FORBIDDEN);
+            return $this->json(['message' => 'Accès refusé'], Response::HTTP_FORBIDDEN);
         }
 
         $data = json_decode($request->getContent(), true);
 
         if (null === $data) {
             return $this->json([
-                'message' => 'Le corps de la requête est invalide (JSON malformé).'
+                'message' => 'Le corps de la requête est invalide (JSON malformé).',
             ], Response::HTTP_BAD_REQUEST);
         }
 
-        if (isset($data['nom'])) {
-            $adherent->setNom($data['nom']);
-        }
-
-        if (isset($data['prenom'])) {
-            $adherent->setPrenom($data['prenom']);
-        }
-
-        if (isset($data['ligue'])) {
-            $adherent->setLigue($data['ligue']);
-        }
-
-        if ($this->isGranted('ROLE_ADMIN') && isset($data['roles'])) {
-            $adherent->setRoles($data['roles']);
-        }
+        if (isset($data['nom']))    { $adherent->setNom($data['nom']); }
+        if (isset($data['prenom'])) { $adherent->setPrenom($data['prenom']); }
+        if (isset($data['ligue']))  { $adherent->setLigue($data['ligue']); }
+        if (isset($data['poste']))  { $adherent->setPoste($data['poste']); }
 
         $this->entityManager->flush();
 
         return $this->json([
-            'message' => 'Adhérent mis à jour',
-            'adherent' => $adherent->toArray()
+            'message'  => 'Adhérent mis à jour',
+            'adherent' => $adherent->toArray(),
         ], Response::HTTP_OK);
     }
 
@@ -187,42 +187,21 @@ class AdherentController extends AbstractController
         $adherent = $this->adherentRepository->find($id);
 
         if (!$adherent) {
-            return $this->json([
-                'message' => 'Adhérent introuvable'
-            ], Response::HTTP_NOT_FOUND);
+            return $this->json(['message' => 'Adhérent introuvable'], Response::HTTP_NOT_FOUND);
         }
 
-        // On ne peut pas supprimer un adhérent qui a des réservations
         if (count($this->reservationsRepository->findBy(['adherent' => $adherent])) > 0) {
             return $this->json([
-                'message' => 'Cet adhérent ne peut pas être supprimé car il possède des réservations.'
+                'message' => 'Cet adhérent ne peut pas être supprimé car il possède des réservations.',
             ], Response::HTTP_CONFLICT);
         }
 
         $this->entityManager->remove($adherent);
         $this->entityManager->flush();
 
-        return $this->json([
-            'message' => 'Adhérent supprimé'
-        ], Response::HTTP_OK);
+        return $this->json(['message' => 'Adhérent supprimé'], Response::HTTP_OK);
     }
 
-    // NOTE: Voir MES réservations (plus besoin de passer l'ID)
-    // IMPORTANT : Je place cette route AVANT la route /{id}/reservations pour éviter les conflits
-    #[Route('/me/reservations', name: 'my_reservations', methods: ['GET'])]
-    #[IsGranted('ROLE_USER')]
-    public function myReservations(): JsonResponse
-    {
-        $adherent = $this->getUser();
-        $reservations = $this->reservationsRepository->findBy(['adherent' => $adherent]);
-
-        return $this->json(
-            array_map(fn (Reservations $r) => $r->toArray(), $reservations),
-            Response::HTTP_OK
-        );
-    }
-
-    // Read reservations of an adherent
     #[Route('/{id}/reservations', name: 'reservations', methods: ['GET'])]
     #[IsGranted('ROLE_USER')]
     public function reservations(int $id): JsonResponse
@@ -230,9 +209,7 @@ class AdherentController extends AbstractController
         $adherent = $this->adherentRepository->find($id);
 
         if (!$adherent) {
-            return $this->json([
-                'message' => 'Adhérent introuvable'
-            ], Response::HTTP_NOT_FOUND);
+            return $this->json(['message' => 'Adhérent introuvable'], Response::HTTP_NOT_FOUND);
         }
 
         $reservations = $this->reservationsRepository->findBy(['adherent' => $adherent]);

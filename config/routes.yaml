@@ -15,3 +15,7 @@ controllers:
     
 api_login_check:
     path: /api/login_check
+
+api_adherent_login_check:
+    path: /api/adherent/login_check
+    methods: POST

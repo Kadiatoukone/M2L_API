@@ -32,11 +32,13 @@ class SecurityController extends AbstractController
             empty($data['password']) ||
             empty($data['nom']) ||
             empty($data['prenom']) ||
-            empty($data['ligue'])
+            empty($data['ligue']) ||
+            empty($data['poste']) ||
+            empty($data['numero_adherent'])
         ) {
             return $this->json([
                 'success' => false,
-                'message' => 'Champs obligatoires manquants',
+                'message' => 'Champs obligatoires manquants (email, password, nom, prenom, ligue, poste, numero_adherent)',
             ], Response::HTTP_BAD_REQUEST);
         }
 
@@ -47,34 +49,37 @@ class SecurityController extends AbstractController
             ], Response::HTTP_CONFLICT);
         }
 
+        if ($this->adherentRepository->findOneBy(['numero_adherent' => $data['numero_adherent']])) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Ce numéro d\'adhérent est déjà utilisé',
+            ], Response::HTTP_CONFLICT);
+        }
+
         $adherent = new Adherent();
         $adherent->setEmail($data['email']);
         $adherent->setNom($data['nom']);
         $adherent->setPrenom($data['prenom']);
         $adherent->setLigue($data['ligue']);
-        $adherent->setRoles(['ROLE_USER']);
-
-        
-        $hashedPassword = $this->passwordHasher->hashPassword(
-            $adherent,
-            $data['password']
+        $adherent->setPoste($data['poste']);
+        $adherent->setNumeroAdherent($data['numero_adherent']);
+        $adherent->setMotDePasse(
+            $this->passwordHasher->hashPassword($adherent, $data['password'])
         );
-        $adherent->setMotDePasse($hashedPassword);
 
-        
         $this->entityManager->persist($adherent);
         $this->entityManager->flush();
 
         return $this->json([
-            'success' => true,
-            'message' => 'Adhérent créé avec succès',
+            'success'  => true,
+            'message'  => 'Adhérent créé avec succès',
+            'adherent' => $adherent->toArray(),
         ], Response::HTTP_CREATED);
     }
 
     #[Route('/login', name: 'login', methods: ['POST'])]
     public function login(): JsonResponse
     {
-        
         return $this->json([
             'message' => 'Authentification gérée par JWT',
         ]);

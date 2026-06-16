@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Entity;
+
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use App\Repository\AdherentRepository;
@@ -17,23 +18,26 @@ class Adherent implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: Types::INTEGER)]
     private ?int $id_adherent = null;
 
-    #[ORM\Column(type: Types::STRING, length: 255)]
-    private ?string $nom = null;
+    #[ORM\Column(type: Types::STRING, length: 50, unique: true)]
+    private string $numero_adherent;
 
     #[ORM\Column(type: Types::STRING, length: 255)]
-    private ?string $prenom = null;
+    private string $nom;
+
+    #[ORM\Column(type: Types::STRING, length: 255)]
+    private string $prenom;
 
     #[ORM\Column(type: Types::STRING, length: 255, unique: true)]
-    private ?string $email = null;
+    private string $email;
 
     #[ORM\Column(type: Types::STRING, length: 255)]
-    private ?string $mot_de_passe = null;
-
-    #[ORM\Column(type: Types::JSON)]
-    private array $roles = [];
+    private string $mot_de_passe;
 
     #[ORM\Column(type: Types::STRING, length: 255)]
-    private ?string $ligue = null;
+    private string $ligue;
+
+    #[ORM\Column(type: Types::STRING, length: 255)]
+    private string $poste;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private ?\DateTimeInterface $createdAt = null;
@@ -46,7 +50,18 @@ class Adherent implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->id_adherent;
     }
 
-    public function getNom(): ?string
+    public function getNumeroAdherent(): string
+    {
+        return $this->numero_adherent;
+    }
+
+    public function setNumeroAdherent(string $numero_adherent): static
+    {
+        $this->numero_adherent = $numero_adherent;
+        return $this;
+    }
+
+    public function getNom(): string
     {
         return $this->nom;
     }
@@ -57,7 +72,7 @@ class Adherent implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getPrenom(): ?string
+    public function getPrenom(): string
     {
         return $this->prenom;
     }
@@ -68,7 +83,7 @@ class Adherent implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getEmail(): ?string
+    public function getEmail(): string
     {
         return $this->email;
     }
@@ -79,7 +94,7 @@ class Adherent implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getMotDePasse(): ?string
+    public function getMotDePasse(): string
     {
         return $this->mot_de_passe;
     }
@@ -90,20 +105,7 @@ class Adherent implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getRoles(): array
-    {
-        $roles = $this->roles;
-        $roles[] = 'ROLE_USER';
-        return array_unique($roles);
-    }
-
-    public function setRoles(array $roles): static
-    {
-        $this->roles = $roles;
-        return $this;
-    }
-
-    public function getLigue(): ?string
+    public function getLigue(): string
     {
         return $this->ligue;
     }
@@ -114,20 +116,37 @@ class Adherent implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
+    public function getPoste(): string
+    {
+        return $this->poste;
+    }
+
+    public function setPoste(string $poste): static
+    {
+        $this->poste = $poste;
+        return $this;
+    }
+
+    // ── UserInterface ──────────────────────────────────────────────────────────
+
     public function getUserIdentifier(): string
-{
-    return $this->email;
-}
+    {
+        return $this->email;
+    }
 
-public function getPassword(): string
-{
-    return $this->mot_de_passe;
-}
+    public function getRoles(): array
+    {
+        return ['ROLE_USER'];
+    }
 
-public function eraseCredentials(): void
-{
-    
-}
+    public function getPassword(): string
+    {
+        return $this->mot_de_passe;
+    }
+
+    public function eraseCredentials(): void {}
+
+    // ── Lifecycle ──────────────────────────────────────────────────────────────
 
     public function getCreatedAt(): ?\DateTimeInterface
     {
@@ -143,9 +162,6 @@ public function eraseCredentials(): void
     public function onPrePersist(): void
     {
         $this->createdAt = new \DateTime();
-        if (empty($this->roles)) {
-            $this->roles = ['ROLE_USER'];
-        }
     }
 
     #[ORM\PreUpdate]
@@ -157,14 +173,15 @@ public function eraseCredentials(): void
     public function toArray(): array
     {
         return [
-            'id' => $this->id_adherent,
-            'nom' => $this->nom,
-            'prenom' => $this->prenom,
-            'email' => $this->email,
-            'roles' => $this->getRoles(),
-            'ligue' => $this->ligue,
-            'createdAt' => $this->createdAt?->format('Y-m-d H:i:s'),
-            'updatedAt' => $this->updatedAt?->format('Y-m-d H:i:s'),
+            'id'              => $this->id_adherent,
+            'numero_adherent' => $this->numero_adherent,
+            'nom'             => $this->nom,
+            'prenom'          => $this->prenom,
+            'email'           => $this->email,
+            'ligue'           => $this->ligue,
+            'poste'           => $this->poste,
+            'createdAt'       => $this->createdAt?->format('Y-m-d H:i:s'),
+            'updatedAt'       => $this->updatedAt?->format('Y-m-d H:i:s'),
         ];
     }
 }
