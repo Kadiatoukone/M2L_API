@@ -19,23 +19,28 @@ class SallesController extends AbstractController
 {
     // GET toutes les salles
     #[Route('/salles', name: 'salles_list', methods: ['GET'])]
-    public function getSalles(Request $request, SallesRepository $sallesRepository): JsonResponse
-    {
-        $categorie = $request->query->get('categorie');
+public function getSalles(Request $request, SallesRepository $sallesRepository): JsonResponse
+{
+    $categorie = $request->query->get('categorie');
+    $libelle   = $request->query->get('libelle'); 
 
-        if ($categorie) {
-            $salles = $sallesRepository->createQueryBuilder('s')
-                ->join('s.typeSalle', 't')
-                ->where('t.categorie = :categorie')
-                ->setParameter('categorie', $categorie)
-                ->getQuery()
-                ->getResult();
-        } else {
-            $salles = $sallesRepository->findAll();
-        }
+    $qb = $sallesRepository->createQueryBuilder('s')
+        ->join('s.typeSalle', 't');
 
-        return $this->json(array_map(fn(Salles $s) => $s->toArray(), $salles));
+    if ($categorie) {
+        $qb->andWhere('t.categorie = :categorie')
+            ->setParameter('categorie', $categorie);
     }
+
+    if ($libelle) {
+        $qb->andWhere('LOWER(t.libelle) = LOWER(:libelle)') 
+            ->setParameter('libelle', $libelle);
+    }
+
+    $salles = $qb->getQuery()->getResult();
+
+    return $this->json(array_map(fn(Salles $s) => $s->toArray(), $salles));
+}
 
     // GET toutes les salles du gestionnaire connecté
     #[Route('/mes-salles', name: 'mes_salles', methods: ['GET'])]
