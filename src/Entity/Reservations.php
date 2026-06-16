@@ -65,20 +65,35 @@ class Reservations
         return $this;
     }
     public function getAdherent(): ?Adherent
-{
-    return $this->adherent;
-}
+    {
+        return $this->adherent;
+    }
 
-public function setAdherent(?Adherent $adherent): static
-{
-    $this->adherent = $adherent;
-    return $this;
-}
+    public function setAdherent(?Adherent $adherent): static
+    {
+        $this->adherent = $adherent;
+        return $this;
+    }
 
     public function getHeureDebut(): ?\DateTimeInterface
     {
         return $this->heureDebut;
     }
+
+    #[ORM\ManyToOne(targetEntity: Salles::class)]
+#[ORM\JoinColumn(nullable: true, name: "id_salles", referencedColumnName: "id_salles")]
+private ?Salles $salle = null;
+
+public function getSalle(): ?Salles
+{
+    return $this->salle;
+}
+
+public function setSalle(?Salles $salle): static
+{
+    $this->salle = $salle;
+    return $this;
+}
 
     public function setHeureDebut(\DateTimeInterface $heureDebut): static
     {
