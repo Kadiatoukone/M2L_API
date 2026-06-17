@@ -41,7 +41,7 @@ L'API expose des endpoints REST sous le préfixe `/api` et retourne des réponse
 | GET/POST/PUT/DELETE | `/api/types-salles` | Authentifié | Gestion des types de salle |
 | GET/POST/PUT/DELETE | `/api/reservations` | Authentifié | Gestion des réservations |
 | GET/POST/PUT/DELETE | `/api/gestionnaires` | ROLE_SUPER_ADMIN | Gestion des gestionnaires |
-| POST | `/api/upload` | Authentifié | Upload d'images (Cloudinary) |
+| POST | `/api/upload` | Authentifié | Upload d'images|
 
 ---
 
