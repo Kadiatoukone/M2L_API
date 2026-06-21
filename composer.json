@@ -55,17 +55,9 @@
         "symfony/polyfill-php82": "*"
     },
     "scripts": {
-        "auto-scripts": {
-            "cache:clear": "php-script",
-            "assets:install %PUBLIC_DIR%": "php-script"
-        },
-        "post-install-cmd": [
-            "@auto-scripts"
-        ],
-        "post-update-cmd": [
-            "@auto-scripts"
-        ]
-    },
+    "post-install-cmd": [],
+    "post-update-cmd": []
+},
     "conflict": {
         "symfony/symfony": "*"
     },
