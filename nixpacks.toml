@@ -1,4 +1,4 @@
-[phases.install]
+[phases.build]
 cmds = ["composer install --optimize-autoloader"]
 
 [start]
